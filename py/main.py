@@ -65,10 +65,10 @@ def main():
             elif event.type == pygame.QUIT:
                 running = False
 
-        if keys['up']: player.move(0, -5)
-        if keys['down']: player.move(0, 5)
-        if keys['left']: player.move(-5, 0)
-        if keys['right']: player.move(5, 0)
+        if keys['up']: player.move(0, -1)
+        if keys['down']: player.move(0, 1)
+        if keys['left']: player.move(-1, 0)
+        if keys['right']: player.move(1, 0)
         if keys['shoot']: player.shoot()
         
         screen.fill(pygame.Color('black'))
