@@ -1,66 +1,76 @@
 import pygame
+import get_settings
 import classes
 
 
-def main():
-    pygame.init()
-    size = 1000, 1000
-    screen = pygame.display.set_mode(size)
+def hud_update(heart, health_bar, surface):
+    pass
 
-    clock = pygame.time.Clock()
+
+def game(screen):
+    spaceship = get_settings.made_spaceship()
+
+    if spaceship[1] == 'auto_cannon': spaceship[1] = classes.Auto_Cannon
+    elif spaceship[1] == 'big_space_cannon': spaceship[1] = classes.Big_Space_Cannon
 
     player_group = pygame.sprite.Group()
-    enemy_group = classes.Enemy_Group()
+    enemy_group = pygame.sprite.Group()
     player_bullet_group = pygame.sprite.Group()
     enemy_bullet_group = pygame.sprite.Group()
 
-    player = classes.Player_SpaceShip1(100, 100, (0, 0, *size), player_bullet_group, enemy_group)
+    player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), player_bullet_group, enemy_group, player_group, *spaceship)
 
     player_group.add(player)
-    player_group.draw(screen)
 
-    for i in range(1, 4):
-        enemy = classes.Enemy1(250 * i, 50, (0, 0, *size), enemy_bullet_group, player_group)
-        enemy.bullet_group = enemy_bullet_group
-        enemy_group.add(enemy)
+    # for i in range(1, 18):
+    #     enemy = classes.Enemy1(60 * i, 50, (0, 0, *size), enemy_bullet_group, player_group)
+    #     enemy.bullet_group = enemy_bullet_group
+    #     enemy_group.add(enemy)
 
     keys = {'up': False, 'down': False, 'left': False, 'right': False, 'shoot': False}
+    clock = pygame.time.Clock()
 
     running = True
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
+                if event.key == pygame.K_w:
                     keys['up'] = True
                 
-                elif event.key == pygame.K_DOWN:
+                elif event.key == pygame.K_s:
                     keys['down'] = True
 
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_a:
                     keys['left'] = True
                 
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_d:
                     keys['right'] = True
 
+                elif event.key == pygame.K_SPACE:
+                    keys['shoot'] = True
+
             elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_UP:
+                if event.key == pygame.K_w:
                     keys['up'] = False
                 
-                elif event.key == pygame.K_DOWN:
+                elif event.key == pygame.K_s:
                     keys['down'] = False
 
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_a:
                     keys['left'] = False
                 
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_d:
                     keys['right'] = False
 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                keys['shoot'] = True
+                elif event.key == pygame.K_SPACE:
+                    keys['shoot'] = False
 
-            elif event.type == pygame.MOUSEBUTTONUP:
-                keys['shoot'] = False
+            # elif event.type == pygame.MOUSEBUTTONDOWN:
+            #     keys['shoot'] = True
+
+            # elif event.type == pygame.MOUSEBUTTONUP:
+            #     keys['shoot1'] = False
 
             elif event.type == pygame.QUIT:
                 running = False
@@ -72,17 +82,24 @@ def main():
         if keys['shoot']: player.shoot()
         
         screen.fill(pygame.Color('black'))
-        player_group.draw(screen)
-        enemy_group.update()
-        enemy_group.draw(screen)
         player_bullet_group.update()
         enemy_bullet_group.update()
         player_bullet_group.draw(screen)
         enemy_bullet_group.draw(screen)
+        player_group.update()
+        player_group.draw(screen)
+        enemy_group.update()
+        enemy_group.draw(screen)
         pygame.display.flip()
 
         clock.tick(60)
 
+
+def main():
+    pygame.init()
+
+    screen = pygame.display.set_mode((800, 1000))
+    game(screen)
     pygame.quit()
 
 

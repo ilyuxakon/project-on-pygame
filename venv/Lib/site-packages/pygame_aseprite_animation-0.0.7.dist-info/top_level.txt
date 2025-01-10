@@ -1,0 +1,2 @@
+py_aseprite
+pygame_aseprite_animation

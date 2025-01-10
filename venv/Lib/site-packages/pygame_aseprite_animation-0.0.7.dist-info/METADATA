@@ -1,0 +1,26 @@
+Metadata-Version: 2.1
+Name: pygame-aseprite-animation
+Version: 0.0.7
+Summary: Package that allows you to import and use .ase and .aseprite files in pygame
+Home-page: UNKNOWN
+Author: Besmir Sejdijaj
+Author-email: b.sejdijaj@hotmail.com
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Topic :: Games/Entertainment
+Classifier: Topic :: Multimedia :: Graphics
+Classifier: Topic :: Software Development :: Libraries :: pygame
+Classifier: Operating System :: OS Independent
+
+https://github.com/ISebSej/pygame_aseprite_animator
+
+

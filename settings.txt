@@ -1,2 +1,0 @@
-player1: hp: 5, damage: 2, reload: 200, speed: 5
-enemy1: hp: 10, damage: 1, reload: 1500, speed: 0
