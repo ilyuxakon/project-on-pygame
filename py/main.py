@@ -8,17 +8,20 @@ def hud_update(heart, health_bar, surface):
 
 
 def game(screen):
-    spaceship = get_settings.made_spaceship()
+    lvl = get_settings.create_lvl()
 
-    if spaceship[1] == 'auto_cannon': spaceship[1] = classes.Auto_Cannon
-    elif spaceship[1] == 'big_space_cannon': spaceship[1] = classes.Big_Space_Cannon
+    if lvl[1] == 'auto_cannon': lvl[1] = classes.Auto_Cannon
+    elif lvl[1] == 'big_space_cannon': lvl[1] = classes.Big_Space_Cannon
+
+    if lvl[2] == 'base_engine': lvl[2] = classes.Base_Engine 
+
 
     player_group = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
     player_bullet_group = pygame.sprite.Group()
     enemy_bullet_group = pygame.sprite.Group()
 
-    player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), player_bullet_group, enemy_group, player_group, *spaceship)
+    player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), player_bullet_group, enemy_group, player_group, *lvl)
 
     player_group.add(player)
 

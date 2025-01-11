@@ -52,12 +52,50 @@ class Spaceship(pygame.sprite.Sprite):
                self.rect.y + self.rect.height + y <= self.wall_y_max
 
 
+class Player_SpaceShip(Spaceship):
+    
+    def __init__(self, x, y, wall, bullet_group, target_group, player_group, spaceship, cannon, engine):
+        super().__init__(x, y, wall, characteristic[spaceship]['filename'][0], bullet_group, target_group, characteristic[spaceship]['hp'], characteristic[spaceship]['speed'])
+        self.stages = characteristic[spaceship]['filename'][1:]
+        self.max_hp = self.hp
+
+        self.engine = engine()
+        self.engine.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+        player_group.add(self.engine)
+
+        self.cannon = cannon(bullet_group, target_group)
+        self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+        player_group.add(self.cannon)
+
+
+    def shoot(self):
+        self.cannon.shoot()
+
+    def hurt(self, damage):
+        super().hurt(damage)
+        print(self.hp)
+
+        if 0.75 >= self.hp / self.max_hp > 0.5:
+            self.set_image(self.stages[0])
+
+        elif 0.5 >= self.hp / self.max_hp > 0.25:
+            self.set_image(self.stages[1])
+
+        elif 0.25 >= self.hp / self.max_hp:
+            self.set_image(self.stages[2])
+
+    def move(self, x, y):
+        super().move(x, y)
+        self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+        self.engine.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+
+
 class Player_Cannon(pygame.sprite.Sprite):
 
     def __init__(self, cannon_name, bullet_group, target_group, columns, rows):
         super().__init__()
 
-        self.frames = animations.make_frames(characteristic[cannon_name]['filename'][0], columns, rows)
+        self.frames = animations.make_frames(characteristic[cannon_name]['filename'], columns, rows)
         self.current_frame = 0
         self.image = self.frames[self.current_frame]
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
@@ -87,98 +125,6 @@ class Player_Cannon(pygame.sprite.Sprite):
         self.wait += 1
 
 
-class Bullet(pygame.sprite.Sprite):
-
-    def __init__(self, x, y, direction, cannon_name, speed, target_group, damage, columns, rows):
-        super().__init__()
-        self.frames = animations.make_frames(characteristic[cannon_name]['filename'][1], columns, rows)
-        self.current_frame = 0
-        self.image = self.frames[self.current_frame]
-        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
-        
-        self.rect.x = x - self.rect.width // 2
-        self.rect.y = y - self.rect.height // 2
-        
-        self.damage = damage
-        self.direction = direction
-        self.speed = speed
-        self.target_group = target_group
-
-    def set_image(self, image):
-        image = pygame.image.load(image)
-        self.image = image
-    
-    def update(self):
-        self.rect.y += self.speed * self.direction[0]
-        self.rect.x += self.speed * self.direction[1]
-
-        self.current_frame = (self.current_frame + 1) % len(self.frames)
-        self.image = self.frames[self.current_frame]
-
-        if self.rect.x + self.rect.width < -100 or\
-           self.rect.y + self.rect.height < -100 or\
-           self.rect.x > 4100 or\
-           self.rect.y > 4100:
-            self.kill()
-            
-        for sprite in self.target_group.sprites():
-            if pygame.sprite.collide_mask(self, sprite):
-                sprite.hurt(self.damage)
-                self.kill()
-
-
-class Enemy(Spaceship):
-
-    def __init__(self, x, y, wall, enemy_name, bullet_group, target_group):
-        super().__init__(x, y, wall, characteristic[enemy_name], bullet_group, target_group, characteristic[enemy_name]['hp'], characteristic[enemy_name]['speed'])
-        self.reload = characteristic[enemy_name]['reload']
-        self.current_reload = self.reload
-        self.clock = pygame.time.Clock()
-        self.wait = 0
-
-    def shoot(self):
-        self.wait += self.clock.tick()
-        if self.wait > self.current_reload:
-            self.wait = 0
-            self.current_reload = self.reload + random.randrange(int(-0.1 *self.reload), int(0.1 * self.reload))
-
-    def update(self, *args, **kwargs):
-        super().update(*args, **kwargs)
-        self.shoot()
-
-
-class Player_SpaceShip(Spaceship):
-    
-    def __init__(self, x, y, wall, bullet_group, target_group, player_group, spaceship, cannon):
-        super().__init__(x, y, wall, characteristic[spaceship]['filename'][0], bullet_group, target_group, characteristic[spaceship]['hp'], characteristic[spaceship]['speed'])
-        self.stages = characteristic[spaceship]['filename'][1:]
-        self.max_hp = self.hp
-
-        self.cannon = cannon(bullet_group, target_group)
-        self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
-        player_group.add(self.cannon)
-
-    def shoot(self):
-        self.cannon.shoot()
-
-    def hurt(self, damage):
-        super().hurt(damage)
-        print(self.hp)
-
-        if 0.75 >= self.hp / self.max_hp > 0.5:
-            self.set_image(self.stages[0])
-
-        elif 0.5 >= self.hp / self.max_hp > 0.25:
-            self.set_image(self.stages[1])
-
-        elif 0.25 >= self.hp / self.max_hp:
-            self.set_image(self.stages[2])
-
-    def move(self, x, y):
-        super().move(x, y)
-        self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
-
-
 class Auto_Cannon(Player_Cannon):
 
     def __init__(self, bullet_group, target_group):
@@ -206,12 +152,6 @@ class Auto_Cannon(Player_Cannon):
             self.image = self.frames[self.current_frame]
 
 
-class Auto_Cannon_Bullet(Bullet):
-    
-    def __init__(self, x, y, target_group):
-        super().__init__(x, y, (-1, 0), 'auto_cannon', characteristic['auto_cannon']['speed'], target_group, characteristic['auto_cannon']['damage'], 4, 1)
-
-
 class Big_Space_Cannon(Player_Cannon):
 
     def __init__(self, bullet_group, target_group):
@@ -235,7 +175,136 @@ class Big_Space_Cannon(Player_Cannon):
             self.image = self.frames[self.current_frame]
 
 
+class Bullet(pygame.sprite.Sprite):
+
+    def __init__(self, x, y, direction, cannon_name, target_group, columns, rows):
+        super().__init__()
+        self.frames = animations.make_frames(characteristic[cannon_name]['bullet_filename'], columns, rows)
+        self.current_frame = 0
+        self.image = self.frames[self.current_frame]
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
+        
+        self.rect.x = x - self.rect.width // 2
+        self.rect.y = y - self.rect.height // 2
+        
+        self.damage = characteristic[cannon_name]['damage']
+        self.direction = direction
+        self.speed = characteristic[cannon_name]['speed']
+        self.target_group = target_group
+
+    def set_image(self, image):
+        image = pygame.image.load(image)
+        self.image = image
+    
+    def update(self):
+        self.rect.y += self.speed * self.direction[0]
+        self.rect.x += self.speed * self.direction[1]
+
+        self.current_frame = (self.current_frame + 1) % len(self.frames)
+        self.image = self.frames[self.current_frame]
+
+        if self.rect.x + self.rect.width < -100 or\
+           self.rect.y + self.rect.height < -100 or\
+           self.rect.x > 4100 or\
+           self.rect.y > 4100:
+            self.kill()
+            
+        for sprite in self.target_group.sprites():
+            if pygame.sprite.collide_mask(self, sprite):
+                sprite.hurt(self.damage)
+                self.kill()
+
+
+class Auto_Cannon_Bullet(Bullet):
+    
+    def __init__(self, x, y, target_group):
+        super().__init__(x, y, (-1, 0), 'auto_cannon', target_group, 4, 1)
+
+
 class Big_Space_Cannon_Bullet(Bullet):
     
     def __init__(self, x, y, target_group):
-        super().__init__(x, y, (-1, 0), 'big_space_cannon', characteristic['big_space_cannon']['speed'], target_group, characteristic['big_space_cannon']['damage'], 10, 1)
+        super().__init__(x, y, (-1, 0), 'big_space_cannon', target_group, 10, 1)
+
+
+class Engine(pygame.sprite.Sprite):
+
+    def __init__(self, engine, idle_columns, idle_rows, powering_columns, powering_rows):
+        super().__init__()
+        self.engine = pygame.image.load(characteristic[engine]['engine_filename'])
+        self.rect = self.engine.get_rect()
+
+        self.idle_frames = animations.make_frames(characteristic[engine]['idle_filename'], idle_columns, idle_rows)
+        self.idle_current_frame = 0
+        self.idle_image = self.idle_frames[self.idle_current_frame]
+
+        self.powering_frames = animations.make_frames(characteristic[engine]['powering_filename'], powering_columns, powering_rows)
+        self.powering_current_frame = -1
+        self.powering_image = self.powering_frames[self.powering_current_frame]
+
+        self.image = self.idle_image
+        self.image.blit(self.engine, (0, 0))
+
+        self.work = False
+
+    def move(self, x, y):
+        self.rect.x = x - self.rect.width // 2 + self.x
+        self.rect.y = y - self.rect.height // 2 + self.y
+        self.work = True
+    
+    def update(self):
+        if self.work:
+            if self.powering_current_frame == len(self.powering_frames) - 1:
+                self.powering_current_frame = -1
+
+            self.powering_current_frame += 1
+            self.powering_image = self.powering_frames[self.powering_current_frame]
+            
+            self.image = self.powering_image
+            self.image.blit(self.engine, (0, 0))
+
+            self.idle_current_frame = -1
+            self.idle_image = self.powering_frames[self.powering_current_frame]
+
+        else:
+            if self.idle_current_frame == len(self.idle_frames) - 1:
+                self.idle_current_frame = -1
+
+            self.idle_current_frame += 1
+            self.idle_image = self.idle_frames[self.idle_current_frame]
+
+            self.image = self.idle_image
+            self.image.blit(self.engine, (0, 0))
+
+            self.powering_current_frame = -1
+            self.powering_image = self.powering_frames[self.powering_current_frame]
+
+        self.work = False
+
+
+class Base_Engine(Engine):
+
+    def __init__(self):
+        super().__init__('base_engine', 3, 1, 4, 1)
+        self.x = 0
+        self.y = 2
+
+
+class Enemy(Spaceship):
+
+    def __init__(self, x, y, wall, enemy_name, bullet_group, target_group):
+        super().__init__(x, y, wall, characteristic[enemy_name], bullet_group, target_group, characteristic[enemy_name]['hp'], characteristic[enemy_name]['speed'])
+        self.reload = characteristic[enemy_name]['reload']
+        self.current_reload = self.reload
+        self.clock = pygame.time.Clock()
+        self.wait = 0
+
+    def shoot(self):
+        self.wait += self.clock.tick()
+        if self.wait > self.current_reload:
+            self.wait = 0
+            self.current_reload = self.reload + random.randrange(int(-0.1 *self.reload), int(0.1 * self.reload))
+
+    def update(self, *args, **kwargs):
+        super().update(*args, **kwargs)
+        self.shoot()

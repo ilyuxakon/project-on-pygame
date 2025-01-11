@@ -1,2 +1,0 @@
-player_spaceship1
-big_space_cannon
