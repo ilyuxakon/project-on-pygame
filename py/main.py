@@ -7,14 +7,18 @@ def hud_update(heart, health_bar, surface):
     pass
 
 
-def game(screen):
+def create_lvl2():
     lvl = get_settings.create_lvl()
 
-    if lvl[1] == 'auto_cannon': lvl[1] = classes.Auto_Cannon
-    elif lvl[1] == 'big_space_cannon': lvl[1] = classes.Big_Space_Cannon
+    if lvl[1] == 'auto_cannon': lvl.insert(1, classes.Auto_Cannon)
+    elif lvl[1] == 'big_space_cannon': lvl.insert(1, classes.Big_Space_Cannon)
 
-    if lvl[2] == 'base_engine': lvl[2] = classes.Base_Engine 
+    if lvl[3] == 'base_engine': lvl.insert(3, classes.Base_Engine)
 
+    return lvl
+
+def game(screen):
+    lvl = create_lvl2()
 
     player_group = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
@@ -23,7 +27,6 @@ def game(screen):
 
     player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), player_bullet_group, enemy_group, player_group, *lvl)
 
-    player_group.add(player)
 
     # for i in range(1, 18):
     #     enemy = classes.Enemy1(60 * i, 50, (0, 0, *size), enemy_bullet_group, player_group)
@@ -82,8 +85,10 @@ def game(screen):
         if keys['down']: player.move(0, 1)
         if keys['left']: player.move(-1, 0)
         if keys['right']: player.move(1, 0)
-        if keys['shoot']: player.shoot()
-        
+        if keys['shoot']:
+            player.shoot()
+            player.hurt(10)
+
         screen.fill(pygame.Color('black'))
         player_bullet_group.update()
         enemy_bullet_group.update()
@@ -94,7 +99,6 @@ def game(screen):
         enemy_group.update()
         enemy_group.draw(screen)
         pygame.display.flip()
-
         clock.tick(60)
 
 
