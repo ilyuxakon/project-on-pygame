@@ -6,7 +6,6 @@ import classes
 def hud_update(heart, health_bar, surface):
     pass
 
-
 def create_lvl2():
     lvl = get_settings.create_lvl()
 
@@ -20,24 +19,20 @@ def create_lvl2():
 def game(screen):
     lvl = create_lvl2()
 
+    spaceships_group = classes.Spaceship_Group()
     player_group = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
     player_bullet_group = pygame.sprite.Group()
     enemy_bullet_group = pygame.sprite.Group()
 
-    player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), player_bullet_group, enemy_group, player_group, *lvl)
+    player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), spaceships_group, player_bullet_group, enemy_group, player_group, *lvl)
 
-
-    # for i in range(1, 18):
-    #     enemy = classes.Enemy1(60 * i, 50, (0, 0, *size), enemy_bullet_group, player_group)
-    #     enemy.bullet_group = enemy_bullet_group
-    #     enemy_group.add(enemy)
+    enemy = classes.Enemy_Fighter(300, 200, (0, 0, 1000, 1000), spaceships_group, enemy_bullet_group, player_group, enemy_group)
 
     keys = {'up': False, 'down': False, 'left': False, 'right': False, 'shoot': False}
     clock = pygame.time.Clock()
 
     running = True
-
     while running:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -85,9 +80,7 @@ def game(screen):
         if keys['down']: player.move(0, 1)
         if keys['left']: player.move(-1, 0)
         if keys['right']: player.move(1, 0)
-        if keys['shoot']:
-            player.shoot()
-            player.hurt(10)
+        if keys['shoot']: player.shoot()
 
         screen.fill(pygame.Color('black'))
         player_bullet_group.update()
@@ -101,14 +94,12 @@ def game(screen):
         pygame.display.flip()
         clock.tick(60)
 
-
 def main():
     pygame.init()
 
     screen = pygame.display.set_mode((800, 1000))
     game(screen)
     pygame.quit()
-
 
 if __name__ == '__main__':
     main()

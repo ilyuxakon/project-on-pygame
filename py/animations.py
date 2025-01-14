@@ -1,6 +1,6 @@
 import pygame 
 
-def make_frames(sheet, columns, rows):
+def make_frames(sheet, columns, rows, cannon=False):
     columns, rows = int(columns), int(rows)
     sheet = pygame.image.load(sheet)
     frames = []
@@ -14,9 +14,19 @@ def make_frames(sheet, columns, rows):
     
     new_frames = []
     for frame in frames:
-        new_frames.append(frame)
-        new_frames.append(frame)
-        new_frames.append(frame)
+        if cannon:
+            new_frames.append(frame)
+    
+        else:
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+
 
     return(new_frames)
 

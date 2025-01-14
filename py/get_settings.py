@@ -6,7 +6,7 @@ def characteristic():
                 i = i.split(':', 1)
                 dictionary[i[0]] = dict([u.strip().split(': ') for u in i[1].split(', ')])
         
-        exceptions = ['filename', 'bullet_filename', 'engine_filename', 'idle_filename', 'powering_filename', 'shield_filename']
+        exceptions = ['filename', 'bullet_filename', 'engine_filename', 'idle_filename', 'powering_filename', 'shield_filename', 'fire_filename', 'death_filename']
         spaceships = ['player_spaceship1']
 
         for key in dictionary.keys():

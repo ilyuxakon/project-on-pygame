@@ -1,3 +1,3 @@
 player_spaceship1
-big_space_cannon
+auto_cannon
 base_engine
