@@ -3,6 +3,9 @@ import get_settings
 import classes
 
 
+FPS = 60
+
+
 def hud_update(heart, health_bar, surface):
     pass
 
@@ -17,17 +20,27 @@ def create_lvl2():
     return lvl
 
 def game(screen):
+    width = 800
+    height = screen.get_height()
+    x = (screen.get_width() - 800) // 2
+    y = 0
+
     lvl = create_lvl2()
 
+
+    hud_group = pygame.sprite.Group()
     spaceships_group = classes.Spaceship_Group()
     player_group = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
     player_bullet_group = pygame.sprite.Group()
     enemy_bullet_group = pygame.sprite.Group()
 
-    player = classes.Player_SpaceShip(300, 700, (0, 0, 1000, 1000), spaceships_group, player_bullet_group, enemy_group, player_group, *lvl)
+    player = classes.Player_SpaceShip(300 + x, 700 + y, (x, y + height // 2, x + 800, height), spaceships_group, player_bullet_group, enemy_group, player_group, *lvl, x + width + 20, 20, (screen.get_width() - width) // 2 - 44, 30, hud_group)
+    player.hurt(1000)
+    enemy = classes.Enemy_Fighter(300 + x, 200 + y, (x, y // 2, x + 800, height // 2), spaceships_group, enemy_bullet_group, player_group, enemy_group)
 
-    enemy = classes.Enemy_Fighter(300, 200, (0, 0, 1000, 1000), spaceships_group, enemy_bullet_group, player_group, enemy_group)
+    wall1 = classes.Wall(x - 4, y, y + height, hud_group)
+    wall2 = classes.Wall(x + 800, y, y + height, hud_group)
 
     keys = {'up': False, 'down': False, 'left': False, 'right': False, 'shoot': False}
     clock = pygame.time.Clock()
@@ -91,13 +104,14 @@ def game(screen):
         player_group.draw(screen)
         enemy_group.update()
         enemy_group.draw(screen)
+        hud_group.draw(screen)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(FPS)
 
 def main():
     pygame.init()
 
-    screen = pygame.display.set_mode((800, 1000))
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     game(screen)
     pygame.quit()
 

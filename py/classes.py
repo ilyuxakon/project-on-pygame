@@ -67,9 +67,9 @@ class Spaceship(pygame.sprite.Sprite):
 
 class Player_SpaceShip(Spaceship):
     
-    def __init__(self, x, y, wall, spaceship_group, bullet_group, target_group, player_group, spaceship, cannon, cannon_name, engine, engine_name):
+    def __init__(self, x, y, wall, spaceship_group, bullet_group, target_group, player_group, spaceship, cannon, cannon_name, engine, engine_name, health_bar_x, health_bar_y, health_bar_width, health_bar_height, health_bar_group):
         super().__init__(x, y, wall, characteristic[spaceship]['filename'][0], spaceship_group, bullet_group, target_group, characteristic[spaceship]['hp'], characteristic[spaceship]['speed'], characteristic[spaceship]['shield_hp'], characteristic[spaceship]['shield_reload'], characteristic[spaceship]['shield_recover'], characteristic[spaceship]['shield_filename'], player_group, characteristic[spaceship]['shield_x'], characteristic[spaceship]['shield_y'], characteristic[spaceship]['shield_columns'], characteristic[spaceship]['shield_rows'])
-        self.stages = characteristic[spaceship]['filename'][1:]
+        self.stages = characteristic[spaceship]['filename']
         self.max_hp = self.hp
 
         self.engine = engine(characteristic[spaceship][engine_name + '_x'], characteristic[spaceship][engine_name + '_y'])
@@ -83,25 +83,50 @@ class Player_SpaceShip(Spaceship):
         player_group.add(self)
         player_group.add(self.shield)
 
+        self.health_bar = Health_Bar(health_bar_x, health_bar_y, health_bar_width, health_bar_height, None, pygame.color.Color('red'), self.hp, health_bar_group)
+        self.shield_bar = Health_Bar(health_bar_x, health_bar_y + health_bar_height + 20, health_bar_width, health_bar_height, None, pygame.color.Color('blue'), self.shield.hp, health_bar_group)
+
     def shoot(self):
         self.cannon.shoot()
 
     def hurt(self, damage):
         super().hurt(damage)
+        
+        self.health_bar.update_health(self.hp)
+        self.shield_bar.update_health(self.shield.hp)
 
-        if 0.75 >= self.hp / self.max_hp > 0.5:
+        if 1 >= self.hp / self.max_hp > 0.75:
             self.image = pygame.image.load(self.stages[0])
 
-        elif 0.5 >= self.hp / self.max_hp > 0.25:
+        if 0.75 >= self.hp / self.max_hp > 0.5:
             self.image = pygame.image.load(self.stages[1])
 
-        elif 0.25 >= self.hp / self.max_hp:
+        elif 0.5 >= self.hp / self.max_hp > 0.25:
             self.image = pygame.image.load(self.stages[2])
+
+        elif 0.25 >= self.hp / self.max_hp:
+            self.image = pygame.image.load(self.stages[3])
+
+        if self.shield.hp == 0 and self.shield.wait == 0:
+            self.shield_bar.healing(self.shield.max_hp, self.shield.reload)
 
     def move(self, x, y):
         super().move(x, y)
         self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
         self.engine.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+
+    def update(self):
+        if self.shield.hp != self.shield.max_hp and self.shield.wait == 0 and self.shield.hp != 0:
+            if self.shield.max_hp - self.shield.hp < self.shield.recover:
+                recover = self.shield.max_hp - self.shield.hp
+
+            else: recover = self.shield.recover
+
+            self.shield_bar.healing(recover, 180)
+
+        super().update()
+        self.health_bar.update_health(self.hp)
+        self.shield_bar.update_health(self.shield.hp)
 
 
 class Shield(pygame.sprite.Sprite):
@@ -132,7 +157,7 @@ class Shield(pygame.sprite.Sprite):
             return False
 
         else:
-            return True            
+            return True 
     
     def move(self, x, y):
         self.rect.x = x - self.rect.width // 2 + self.x
@@ -143,7 +168,7 @@ class Shield(pygame.sprite.Sprite):
             self.wait += 1
 
         if self.hp != 0:
-            if self.wait == 300 :
+            if self.wait == 180:
                 self.hp += self.recover
                 self.wait = 0
 
@@ -178,8 +203,7 @@ class Player_Cannon(pygame.sprite.Sprite):
 
         self.bullet_group = bullet_group
         self.target_group = target_group
-        self.reload = characteristic[cannon_name]['reload']
-        self.current_reload = self.reload
+        self.reload = self.current_reload = characteristic[cannon_name]['reload']
         self.damage = characteristic[cannon_name]['damage']
 
         self.clock = pygame.time.Clock()
@@ -314,12 +338,11 @@ class Engine(pygame.sprite.Sprite):
 
         self.idle_frames = animations.make_frames(characteristic[engine]['idle_filename'], idle_columns, idle_rows)
         self.idle_current_frame = 0
-        self.idle_image = self.idle_frames[self.idle_current_frame]
+        self.idle_image = self.idle_frames[self.idle_current_frame].copy()
 
         self.powering_frames = animations.make_frames(characteristic[engine]['powering_filename'], powering_columns, powering_rows)
         self.powering_current_frame = -1
-        self.powering_image = self.powering_frames[self.powering_current_frame]
-
+        self.powering_image = self.powering_frames[self.powering_current_frame].copy()
         self.image = self.idle_image
         self.image.blit(self.engine, (0, 0))
 
@@ -336,7 +359,7 @@ class Engine(pygame.sprite.Sprite):
                 self.powering_current_frame = -1
 
             self.powering_current_frame += 1
-            self.powering_image = self.powering_frames[self.powering_current_frame]
+            self.powering_image = self.powering_frames[self.powering_current_frame].copy()
             
             self.image = self.powering_image
             self.image.blit(self.engine, (0, 0))
@@ -349,7 +372,7 @@ class Engine(pygame.sprite.Sprite):
                 self.idle_current_frame = -1
 
             self.idle_current_frame += 1
-            self.idle_image = self.idle_frames[self.idle_current_frame]
+            self.idle_image = self.idle_frames[self.idle_current_frame].copy()
 
             self.image = self.idle_image
             self.image.blit(self.engine, (0, 0))
@@ -376,8 +399,7 @@ class Enemy(Spaceship):
 
         self.current_group = current_group
 
-        self.reload = characteristic[enemy_name]['reload']
-        self.current_reload = self.reload
+        self.reload = self.current_reload =characteristic[enemy_name]['reload']
         self.wait = -1
 
         self.engine_frames = animations.make_frames(characteristic[enemy_name]['engine_filename'], characteristic[enemy_name]['engine_columns'], characteristic[enemy_name]['engine_rows'])
@@ -423,7 +445,7 @@ class Enemy(Spaceship):
                     self.wait = 0
 
                 self.fire_current_frame += 1
-                self.image = self.fire_frames[self.fire_current_frame]
+                self.image = self.fire_frames[self.fire_current_frame].copy()
 
             else:
                 self.image = self.spaceship.copy()
@@ -456,3 +478,71 @@ class Enemy_Fighter(Enemy):
         elif self.fire_current_frame == 6:
             bullet = Fighter_Bullet(self.rect.x + 40, self.rect.y + 43, (0, 1), self.target_group)
             self.bullet_group.add(bullet)
+
+
+class Wall(pygame.sprite.Sprite):
+
+    def __init__(self, x, start_y, end_y, group):
+        super().__init__()
+        self.image = pygame.surface.Surface((4, end_y - start_y))
+        self.image.fill(pygame.color.Color('white'))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        group.add(self)
+
+
+class Health_Bar(pygame.sprite.Sprite):
+
+    def __init__(self, x, y, width, height, image, color, hp, group):
+        super().__init__()
+        self.originall_image = pygame.surface.Surface((width, height))
+        self.rect = self.originall_image.get_rect()
+        self.rect.x, self.rect.y = x, y
+        self.color = color
+
+        self.hp = self.max_hp =  hp
+        self.pixel = width / hp
+        self.wait = 0
+        self.frames = 1
+        self.healing_flag = False
+
+        self.update_health(hp)
+        group.add(self)
+
+    def update_health(self, hp):
+        if self.hp != hp:
+            self.stop_healing()
+
+        self.hp = hp
+        self.image = self.originall_image.copy()
+        width = int(self.hp * self.pixel)
+        pygame.draw.rect(self.image, self.color, (0, 0, width, self.rect.height))
+
+        if self.healing_flag:
+            self.wait += 1
+            rect = pygame.surface.Surface((int(self.wait * self.step), self.rect.height))
+            rect.set_alpha(50)
+            rect.fill(self.color)
+            self.image.blit(rect, (int(self.hp * self.pixel), 0))
+
+        text = str(self.hp) + '/' + str(self.max_hp)
+        font = pygame.font.Font(None, self.rect.height)
+        text = font.render(text, True, pygame.color.Color('white'))
+        self.image.blit(text, ((self.rect.width - text.get_width()) // 2, (self.rect.height - text.get_height()) // 2))
+
+        if self.wait > self.frames:
+            self.stop_healing()
+            self.update_health(self.hp + self.healing_hp)
+
+    def healing(self, hp, frames):
+        if self.hp + hp > self.max_hp: hp = self.max_hp - self.hp
+
+        self.healing_flag = True
+        self.step = (hp * self.pixel) / frames
+        self.healing_hp = hp
+        self.frames = frames
+
+    def stop_healing(self):
+        self.healing_flag = False
+        self.wait = 0
+    
