@@ -16,6 +16,9 @@ def make_frames(sheet, columns, rows, cannon=False):
     for frame in frames:
         if cannon:
             new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
+            new_frames.append(frame)
     
         else:
             new_frames.append(frame)

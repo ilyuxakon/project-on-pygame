@@ -5,28 +5,26 @@ import classes
 
 FPS = 60
 
+def settings(lvl_name):
+    player = get_settings.create_player_ship()
 
-def hud_update(heart, health_bar, surface):
-    pass
+    if player[1] == 'auto_cannon': player.insert(1, classes.Auto_Cannon)
+    elif player[1] == 'big_space_cannon': player.insert(1, classes.Big_Space_Cannon)
 
-def create_lvl2():
-    lvl = get_settings.create_lvl()
+    if player[3] == 'base_engine': player.insert(3, classes.Base_Engine)
 
-    if lvl[1] == 'auto_cannon': lvl.insert(1, classes.Auto_Cannon)
-    elif lvl[1] == 'big_space_cannon': lvl.insert(1, classes.Big_Space_Cannon)
+    enemy_placement = get_settings.enemy_placement(lvl_name)
 
-    if lvl[3] == 'base_engine': lvl.insert(3, classes.Base_Engine)
+    player.append(enemy_placement)
+    return player
 
-    return lvl
-
-def game(screen):
+def create_lvl(screen, lvl_name):
     width = 800
     height = screen.get_height()
     x = (screen.get_width() - 800) // 2
     y = 0
 
-    lvl = create_lvl2()
-
+    s = settings(lvl_name)
 
     hud_group = pygame.sprite.Group()
     spaceships_group = classes.Spaceship_Group()
@@ -35,12 +33,39 @@ def game(screen):
     player_bullet_group = pygame.sprite.Group()
     enemy_bullet_group = pygame.sprite.Group()
 
-    player = classes.Player_SpaceShip(300 + x, 700 + y, (x, y + height // 2, x + 800, height), spaceships_group, player_bullet_group, enemy_group, player_group, *lvl, x + width + 20, 20, (screen.get_width() - width) // 2 - 44, 30, hud_group)
-    player.hurt(1000)
-    enemy = classes.Enemy_Fighter(300 + x, 200 + y, (x, y // 2, x + 800, height // 2), spaceships_group, enemy_bullet_group, player_group, enemy_group)
+    game_group = classes.Game_Group()
+    game_group.add(player_bullet_group, player_group, enemy_bullet_group, enemy_group, hud_group)
+    
+    player = classes.Player_SpaceShip(400 + x, height * 0.75, (x, y + height // 2, x + 800, height), screen.get_width(), height, spaceships_group, player_bullet_group, enemy_group, player_group, *s[:-1], x + width + 20, 20, (screen.get_width() - width) // 2 - 44, 30, hud_group)
 
     wall1 = classes.Wall(x - 4, y, y + height, hud_group)
     wall2 = classes.Wall(x + 800, y, y + height, hud_group)
+
+    set_up_enemies(s[-1][0], spaceships_group, enemy_bullet_group, player_group, enemy_group, height, screen.get_width(), x, y)
+
+    return player, game_group, enemy_group, (spaceships_group, enemy_bullet_group, player_group, enemy_group, height, screen.get_width(), x, y), s[-1][1:]
+
+def set_up_enemies(placement, spaceships_group, enemy_bullet_group, player_group, enemy_group, screen_height, screen_width, x, y):
+    pos_height = (screen_height / 2) // len(placement)
+
+    for pos_y in range(len(placement)):
+        width = 800 // len(placement[pos_y])
+        for pos_x in range(len(placement[pos_y])):
+            if placement[pos_y][pos_x] == '-':
+                continue
+            
+            elif placement[pos_y][pos_x] == 'fi':
+                enemy = classes.Enemy_Fighter(int(width * (pos_x + 0.5)) + x, int((pos_y + 0.5) * pos_height), (x, y + screen_height // 2, x + 800, screen_height), spaceships_group, enemy_bullet_group, player_group, enemy_group, screen_width, screen_height)
+
+            elif placement[pos_y][pos_x] == 'fr':
+                enemy = classes.Enemy_Frigate(int(width * (pos_x + 0.5)) + x, int((pos_y + 0.5) * pos_height), (x, y + screen_height // 2, x + 800, screen_height), spaceships_group, enemy_bullet_group, player_group, enemy_group, screen_width, screen_height)
+
+            elif placement[pos_y][pos_x] == 'to':
+                enemy = classes.Enemy_Torpedo(int(width * (pos_x + 0.5)) + x, int((pos_y + 0.5) * pos_height), (x, y + screen_height // 2, x + 800, screen_height), spaceships_group, enemy_bullet_group, player_group, enemy_group, screen_width, screen_height)
+
+
+def game(screen):
+    player, game_group, enemy_group, sue_settings, placements = create_lvl(screen, '1.txt')
 
     keys = {'up': False, 'down': False, 'left': False, 'right': False, 'shoot': False}
     clock = pygame.time.Clock()
@@ -96,17 +121,22 @@ def game(screen):
         if keys['shoot']: player.shoot()
 
         screen.fill(pygame.Color('black'))
-        player_bullet_group.update()
-        enemy_bullet_group.update()
-        player_bullet_group.draw(screen)
-        enemy_bullet_group.draw(screen)
-        player_group.update()
-        player_group.draw(screen)
-        enemy_group.update()
-        enemy_group.draw(screen)
-        hud_group.draw(screen)
+        game_group.update()
+        game_group.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
+
+        if len(enemy_group.sprites()) == 0:
+            if len(placements) == 0:
+                running = False
+
+            else:
+                set_up_enemies(placements.pop(0), *sue_settings)
+
+        if player.death_check:
+            running = False
+
+    pygame.quit()
 
 def main():
     pygame.init()

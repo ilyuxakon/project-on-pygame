@@ -13,13 +13,19 @@ def characteristic():
             for key1 in dictionary[key].keys():
                 if key1 == 'filename' and key in spaceships:
                     dictionary[key][key1] = dictionary[key][key1].split(';')
+                
+                elif key1 == 'turn_angle':
+                    dictionary[key][key1] = float(dictionary[key][key1])
+                    
                 elif key1 not in exceptions:
                     dictionary[key][key1] = int(dictionary[key][key1])
+
     return dictionary
 
-def create_lvl():
-    with open('settings\lvl_settings.txt', 'r', encoding='utf-8') as setting:
+def create_player_ship():
+    with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as setting:
         return [i.strip() for i in setting.readlines()]
     
-
-
+def enemy_placement(filename):
+    with open('levels\\' + filename, 'r', encoding='utf-8') as settings:
+        return [[u.split('|') for u in i.strip().split('\n')] for i in ''.join(settings.readlines()).split('---\n')]
