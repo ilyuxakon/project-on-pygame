@@ -22,10 +22,12 @@ def characteristic():
 
     return dictionary
 
+
 def create_player_ship():
     with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as setting:
         return [i.strip() for i in setting.readlines()]
     
+
 def enemy_placement(filename):
     with open('levels\\' + filename, 'r', encoding='utf-8') as settings:
         return [[u.split('|') for u in i.strip().split('\n')] for i in ''.join(settings.readlines()).split('---\n')]

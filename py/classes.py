@@ -1,5 +1,6 @@
 import pygame
 import random
+import pygame.scrap
 import animations
 import get_settings
 import math
@@ -169,9 +170,14 @@ class Game():
 
 
         def move(self, x, y):
-            super().move(x, y)
-            self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
-            self.engine.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+            if self.cannon.can_move:
+                super().move(x, y)
+                self.cannon.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+                self.engine.move(self.rect.x + self.rect.width // 2, self.rect.y + self.rect.height // 2)
+        
+        def death(self):
+            self.cannon.death()
+            super().death()
 
         def update(self):
             if self.shield.hp != self.shield.max_hp and self.shield.wait == 0 and self.shield.hp != 0:
@@ -267,7 +273,8 @@ class Game():
             self.target_group = target_group
             self.reload = self.current_reload = Game.characteristic[cannon_name]['reload']
             self.damage = Game.characteristic[cannon_name]['damage']
-
+            
+            self.can_move = True
             self.clock = pygame.time.Clock()
             self.wait = 0
             
@@ -281,6 +288,9 @@ class Game():
         def move(self, x, y):
             self.rect.x = x - self.rect.width // 2 + self.x
             self.rect.y = y - self.rect.height // 2 + self.y
+
+        def death(self):
+            pass
 
         def update(self):
             self.wait += 1
@@ -333,6 +343,74 @@ class Game():
                 self.bullet_group.add(bullet)
 
 
+    class Rockets_Cannon(Player_Cannon):
+
+        def __init__(self, bullet_group, target_group, x, y, screen_width, screen_height):
+            super().__init__('rockets_cannon', bullet_group, target_group, 17, 1)
+            self.x = x
+            self.y = y
+            self.screen_width = screen_width
+            self.screen_height = screen_height
+
+        def update(self):
+            super().update()
+
+            if self.current_frame == 8:
+                bullet = Game.Player_Rocket(self.rect.x + 18, self.rect.y + 23, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet)
+
+            if self.current_frame == 16:
+                bullet = Game.Player_Rocket(self.rect.x + 31, self.rect.y + 23, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet)
+
+            if self.current_frame == 24:
+                bullet = Game.Player_Rocket(self.rect.x + 14, self.rect.y + 27, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet)
+
+            if self.current_frame == 32:
+                bullet = Game.Player_Rocket(self.rect.x + 35, self.rect.y + 27, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet)
+
+            if self.current_frame == 40:
+                bullet = Game.Player_Rocket(self.rect.x + 10, self.rect.y + 31, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet)
+
+            if self.current_frame == 48:
+                bullet = Game.Player_Rocket(self.rect.x + 39, self.rect.y + 31, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet)
+        
+
+    class Zapper_Cannon(Player_Cannon):
+        
+        def __init__(self, bullet_group, target_group, x, y, screen_width, screen_height):
+            super().__init__('zapper_cannon', bullet_group, target_group, 14, 1)
+            self.x = x
+            self.y = y
+            self.screen_width = screen_width
+            self.screen_height = screen_height
+        
+        def death(self):
+            self.rays[0].kill()
+            self.rays[1].kill()
+
+        def update(self):
+            super().update()
+
+            if self.current_frame == 12:
+                bullet1 = Game.Player_Ray(self.rect.x + 16, self.rect.y + 30, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet1)
+
+                bullet2 = Game.Player_Ray(self.rect.x + 32, self.rect.y + 30, (0, -1), self.target_group, self.screen_width, self.screen_height)
+                self.bullet_group.add(bullet2)
+
+                self.rays = (bullet1, bullet2)
+                self.can_move = False
+
+            if self.current_frame == 32:
+                self.death()
+                self.can_move = True
+
+            
     class Bullet(pygame.sprite.Sprite):
 
         def __init__(self, x, y, direction, cannon_name, target_group, screen_width, screen_height, columns=None, rows=None):
@@ -362,11 +440,15 @@ class Game():
 
         def get_angle(self, vector1=None, vector2=(0, -1)):
             if vector1 is None:
-                vector1 = self.direction
+                if self.direction[0] == 0 and self.direction[1] == 0: vector1 = (0.001, 0.001)
+                else: vector1 = self.direction
+
             ma = math.sqrt(vector1[0] ** 2 + vector1[1] ** 2)
             mb = math.sqrt(vector2[0] ** 2 + vector2[1] ** 2)
             sc = vector1[0] * vector2[0] + vector1[1] * vector2[1]
-            return math.degrees(math.acos(sc / ma / mb))
+            a = sc / ma / mb
+            if a > 1: a = 1
+            return math.degrees(math.acos(a))
         
         def hit(self):
             for sprite in self.target_group.sprites():
@@ -427,8 +509,8 @@ class Game():
 
     class Rocket(Bullet):
 
-        def __init__(self, x, y, direction, cannon_name, target_group, screen_width, screen_height):
-            super().__init__(x, y, direction, cannon_name, target_group, screen_width, screen_height)
+        def __init__(self, x, y, direction, cannon_name, target_group, screen_width, screen_height, columns=None, rows=None):
+            super().__init__(x, y, direction, cannon_name, target_group, screen_width, screen_height, columns, rows)
             self.critical_angle = Game.characteristic[cannon_name]['critical_angle']
             self.turn_angle = Game.characteristic[cannon_name]['turn_angle']
 
@@ -440,15 +522,25 @@ class Game():
             for sprite in self.target_group.sprites():
                 for group in sprite.groups():
                     if type(group) == Game.Spaceship_Group: 
-                        vector = (sprite.rect.x + sprite.rect.width // 2) - (self.rect.x + self.rect.width // 2), (sprite.rect.y + sprite.rect.height // 2) - (self.rect.y + self.rect.height // 2)
-                        angle1 = self.get_angle()
-                        angle2 = self.get_angle(vector1=vector)
-                        if self.direction[0] < 0: angle1 = 360 - angle1
-                        if vector[0] < 0: angle2 = 360 - angle2
-                        angle = angle1 - angle2
+                        vector = sprite.rect.centerx - self.rect.centerx, sprite.rect.centery - self.rect.centery
+                        angle = self.get_angle(vector2=vector)
 
                         if abs(angle) <= self.critical_angle:
-                            targets.append((angle, abs(((self.rect.x + self.rect.width // 2) - (sprite.rect.x + sprite.rect.width // 2)) ** 2 + ((self.rect.y + self.rect.height // 2) - (sprite.rect.y + sprite.rect.height // 2) ** 2)) ** 0.5))
+                            if self.direction[0] + self.direction[1] == 0 : direction_n = self.direction[0] / 0.0001
+                            else: direction_n = self.direction[0] / (self.direction[0] ** 2 + self.direction[1] ** 2) ** 0.5
+                            
+                            if vector[0] + vector[1] == 0: vector_n = vector[0] / 0.0001
+                            else: vector_n = vector[0] / (vector[0] ** 2 + vector[1] ** 2) ** 0.5 
+
+                            if direction_n >= vector_n :
+                                turn_angle = angle * -1
+
+                            else: turn_angle = angle
+
+                            if self.rect.centery > sprite.rect.centery:
+                                turn_angle *= -1
+
+                            targets.append((turn_angle, ((self.rect.centerx - sprite.rect.centerx) ** 2 + (self.rect.centery - self.rect.centery) ** 2) ** 0.5))
 
             if len(targets) != 0:
                 turn_angle = min(targets, key=lambda x: x[1])[0]
@@ -457,7 +549,7 @@ class Game():
                     if turn_angle < 0: turn_angle = -self.turn_angle
                     elif turn_angle > 0: turn_angle = self.turn_angle
 
-                self.turn(self.angle + turn_angle - 180)
+                self.turn(self.angle + turn_angle + 180)
                 self.angle = self.angle + turn_angle
 
             super().update()
@@ -468,6 +560,12 @@ class Game():
         def __init__(self, x, y, direction, target_group, screen_width, screen_height):
             super().__init__(x, y, direction, 'enemy_rocket', target_group, screen_width, screen_height)
 
+
+    class Player_Rocket(Rocket):
+        
+        def __init__(self, x, y, direction, target_group, screen_width, screen_height):
+            super().__init__(x, y, direction, 'rockets_cannon', target_group, screen_width, screen_height, 3, 1)
+        
 
     class Bomb(Bullet):
         
@@ -517,17 +615,16 @@ class Game():
 
     class Ray(Bullet):
 
-        def __init__(self, x, y, direction, cannon_name, target_group, screen_width, screen_height):
-            super().__init__(x, y, direction, cannon_name, target_group, screen_width, screen_height)
-            self.start_x, self.start_y = self.rect.x, self.rect.y
+        def __init__(self, x, y, direction, cannon_name, target_group, screen_width, screen_height, columns=None, rows=None):
+            super().__init__(x, y, direction, cannon_name, target_group, screen_width, screen_height, columns, rows)
+            if direction[1] == -1: self.rect.y -= self.screen_height
             self.draw()
 
         def draw(self):
             image = pygame.surface.Surface((self.rect.width, self.screen_height), pygame.SRCALPHA, 32)
 
             for i in range(1, 9999):
-                y = i * self.rect.height * self.direction[1]
-
+                y = i * self.rect.height
                 image.blit(self.frames[self.current_frame], (0, y))
 
                 if y + self.rect.height < 0 or\
@@ -553,7 +650,13 @@ class Game():
 
         def __init__(self, x, y, direction, target_group, screen_width, screen_height):
             super().__init__(x, y, direction, 'enemy_ray', target_group, screen_width, screen_height)
+    
 
+    class Player_Ray(Ray):
+
+        def __init__(self, x, y, direction, target_group, screen_width, screen_height):
+            super().__init__(x, y, direction, 'zapper_cannon', target_group, screen_width, screen_height, 8, 1)
+    
 
     class Engine(pygame.sprite.Sprite):
 
@@ -649,6 +752,10 @@ class Game():
                 inaccuracy = random.randrange(-5, 6)
                 self.current_reload = self.reload + (self.reload * inaccuracy * 0.1)
                 self.fire_flag = True
+
+        def death(self):
+            pygame.event.post(pygame.event.Event(pygame.USEREVENT))
+            super().death()
 
         def update(self):
             if self.death_check:
@@ -867,29 +974,6 @@ class Game():
                 if flag: self.move(*direction)
 
 
-    class Enemy_Support(Spaceship):
-
-        def __init__(self, x, y, wall, screen_width, screen_height, image, spaceship_group, current_group, hp, speed):
-            super().__init__(x, y, wall, screen_width, screen_height, image, spaceship_group, hp, speed)
-            self.current_group = current_group
-
-            self.reload = self.current_reload = Game.characteristic['enemy_support']['reload']
-            self.wait = -1
-
-            self.engine_frames = animations.make_frames(Game.characteristic['enemy_support']['engine_filename'], Game.characteristic['enemy_support']['engine_columns'], Game.characteristic['enemy_support']['engine_rows'])
-            self.engine_current_frame = -1
-
-            self.current_group.add(self)
-            self.angle = 0
-            self.update()
-
-        def turn(self, angle):
-            self.direction = (math.sin(math.radians(angle)), math.cos(math.radians(angle)))
-
-        def update(self):
-            pass
-
-
     class Wall(pygame.sprite.Sprite):
 
         def __init__(self, x, start_y, end_y, group):
@@ -905,8 +989,8 @@ class Game():
 
         def __init__(self, x, y, width, height, image, color, hp, group):
             super().__init__()
-            self.originall_image = pygame.surface.Surface((width, height))
-            self.rect = self.originall_image.get_rect()
+            self.original_image = pygame.surface.Surface((width, height))
+            self.rect = self.original_image.get_rect()
             self.rect.x, self.rect.y = x, y
             self.color = color
 
@@ -924,7 +1008,7 @@ class Game():
                 self.stop_healing()
 
             self.hp = hp
-            self.image = self.originall_image.copy()
+            self.image = self.original_image.copy()
             width = int(self.hp * self.pixel)
             pygame.draw.rect(self.image, self.color, (0, 0, width, self.rect.height))
 
@@ -957,11 +1041,30 @@ class Game():
             self.wait = 0
 
 
+    class Stopwatch(pygame.sprite.Sprite):
+
+        def __init__(self, x, y, width, height, stopwatch, group):
+            super().__init__()
+
+            self.font = pygame.font.Font(None, height)
+            self.rect = pygame.rect.Rect(10, y, width - 10, height)
+            self.stopwatch = stopwatch
+            self.time = 0
+
+            self.update
+            group.add(self)
+
+        def update(self):
+            self.time += self.stopwatch.tick()
+            text = f'{self.time // 1000 // 60}:{self.time // 1000 % 60}:{str(self.time % 1000)[:2]}'
+            self.image = self.font.render(text, self.rect.height, pygame.color.Color('white'))
+
+
 class Menu():
 
     class Button(pygame.sprite.Sprite):
 
-        def __init__(self, x, y, signal, image, background, size, text=False, text_color='black', background_color=None, border=0, border_color='white'):
+        def __init__(self, x, y, signal, image, size, text=False, text_color='black', background_color=None, background=None, border=0, border_color='white'):
             super().__init__()
             self.event = pygame.event.Event(signal)
 
@@ -973,33 +1076,30 @@ class Menu():
                 self.main_image = image
             self.main_image_rect = self.main_image.get_rect()
 
-            self.originall_image = pygame.surface.Surface(size, pygame.SRCALPHA)
+            self.original_image = pygame.surface.Surface(size, pygame.SRCALPHA)
             if background is not None:
-                self.originall_image.blit(pygame.image.load(background), (0, 0))
+                self.original_image.blit(pygame.image.load(background), (0, 0))
 
             else:
-                if background_color is None:
-                    self.originall_image = self.originall_image.convert_alpha()
+                if background_color is not None:
+                    self.original_image.fill(pygame.color.Color(background_color))
+            self.rect = self.original_image.get_rect()
 
-                else:
-                    self.originall_image.fill(pygame.color.Color(background_color))
-            self.rect = self.originall_image.get_rect()
-
-            self.originall_image.blit(self.main_image, ((self.rect.width - self.main_image_rect.width) // 2, (self.rect.height - self.main_image_rect.height) // 2))
+            self.original_image.blit(self.main_image, ((self.rect.width - self.main_image_rect.width) // 2, (self.rect.height - self.main_image_rect.height) // 2))
 
             if border != 0:
-                pygame.draw.lines(self.originall_image, pygame.color.Color(border_color), True, ((0, 0), (size[0] - border // 2, 0), (size[0] - border // 2, size[1] - border // 2), (0, size[1] - border // 2)), border)
-            self.image = self.originall_image.copy()
+                pygame.draw.lines(self.original_image, pygame.color.Color(border_color), True, ((border // 2, border // 2), (size[0] - border // 2 - 1 , border // 2), (size[0] - border // 2 - 1, size[1] - border // 2 - 1), (border // 2, size[1] - border // 2 - 1)), border)
+            self.image = self.original_image.copy()
 
             self.rect.centerx, self.rect.centery = x, y
 
         def switch(self, flag):
             if flag:
-                self.image = self.originall_image.copy()
+                self.image = self.original_image.copy()
                 self.image.set_alpha(128)
 
             else:
-                self.image = self.originall_image.copy()
+                self.image = self.original_image.copy()
         
         def click(self, flag):
             if flag:
@@ -1024,11 +1124,7 @@ class Menu():
         def __init__(self):
             super().__init__()
             self.dict = dict()
-
-        def append(self, name, sprite):
-            self.dict[name] = sprite
-            self.add(sprite)
-
+            
         def update(self, coord, click):
             for sprite in self.sprites():
                 if type(sprite) == Menu.Button:
@@ -1037,13 +1133,16 @@ class Menu():
                 elif type(sprite) == Menu.Data:
                     sprite.update()
 
+                elif type(sprite) == Menu.Switch_Button_Group:
+                    sprite.update(coord, click)
 
-    class Switch_Butto_Group(Button_Group):
+
+    class Switch_Button_Group(Button_Group):
         
         def __init__(self, button_group, n):
             super().__init__()
             self.dict = button_group.dict
-            self.spritedict = button_group.sprite_dict
+            self.spritedict = button_group.spritedict
             i = -1
             for sprite in self.sprites():
                 if type(sprite) == Menu.Button:
@@ -1064,11 +1163,37 @@ class Menu():
                 elif type(sprite) == Menu.Data:
                     sprite.update()
 
+    
+    class Group_Group():
+        def __init__(self):
+            self.list = list()
+            self.dict = dict()
+
+        def add(self, group):
+            self.list.append(group)
+
+        def draw(self, screen):
+            for group in self.list:
+                group.draw(screen)
+
+        def update(self, coord, click):
+            for group in self.list:
+                group.update(coord, click)
+
+
     class Image(pygame.sprite.Sprite):
         
         def __init__(self, x, y, images):
             super().__init__()
-            self.images = images
+            new_images = list()
+
+            for im in images:
+                rect = im.get_rect()
+                image = pygame.surface.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                image.blit(im, (0, 0))
+                new_images.append(image)
+
+            self.images = new_images
             self.current_image = 0
             self.image = self.images[self.current_image]
             self.rect = self.image.get_rect()
@@ -1080,12 +1205,16 @@ class Menu():
             self.rect = self.image.get_rect()
             self.rect.centerx, self.rect.centery = self.x, self.y
 
+
         def previous(self):
             self.current_image = (self.current_image - 1) % len(self.images)
             self.image = self.images[self.current_image]
             self.rect = self.image.get_rect()
             self.rect.centerx, self.rect.centery = self.x, self.y
-        
+
+        def set_alpha(self, n):
+            self.image.set_alpha(n)
+
 
     class Text(pygame.sprite.Sprite):
 
@@ -1094,7 +1223,11 @@ class Menu():
             images = []
             font = pygame.font.Font(None, height)
             for text in texts:
-                images.append(font.render(text, True, pygame.color.Color(color)))
+                text = font.render(text, True, pygame.color.Color(color))
+                rect = text.get_rect()
+                image = pygame.surface.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                image.blit(text, (0, 0))
+                images.append(image)
 
             self.images = images
             self.current_image = 0
@@ -1108,28 +1241,62 @@ class Menu():
             self.rect = self.image.get_rect()
             self.rect.centerx, self.rect.centery = self.x, self.y
 
+
         def previous(self):
             self.current_image = (self.current_image - 1) % len(self.images)
             self.image = self.images[self.current_image]
             self.rect = self.image.get_rect()
             self.rect.centerx, self.rect.centery = self.x, self.y
-    
+
+        def set_alpha(self, n):
+            self.image.set_alpha(n)
+
+
+    class Empty(pygame.sprite.Sprite):
+
+        def __init__(self, x, y, width, height):
+            super().__init__()
+            self.image = pygame.surface.Surface((width, height), pygame.SRCALPHA)
+            self.image = self.image.convert_alpha()
+            self.rect = self.image.get_rect()
+            self.rect.centerx, self.rect.centery = self.x, self.y = x, y
+
+        def next(self):
+            pass
+
+        def previous(self):
+            pass
+
+        def set_alpha(self, n):
+            pass
+
 
     class Data(pygame.sprite.Group):
 
-        def __init__(self, x, y, data, text_height, color, names):
+        def __init__(self, x, y, data, text_height, color, names, available):
             super().__init__()
             self.spriteslist = []
             self.names = names
+            self.available = available
             height = 0
             for d in data:
-                if d[-1]:
+                if d[-1] == 1:
                     sprite = Menu.Image(x, y, d[0])
                     self.spriteslist.append(sprite)
                     self.add(sprite)
                 
-                else:
+                elif d[-1] == 2:
                     sprite = Menu.Text(x, y, text_height, d[0], color)
+                    self.spriteslist.append(sprite)
+                    self.add(sprite)
+
+                elif d[-1] == 3:
+                    sprite = Menu.Table.Tables(x, y, d[:-1])
+                    self.spriteslist.append(sprite)
+                    self.add(sprite)
+
+                elif d[-1] == 4:
+                    sprite = Menu.Empty(x, y, 1, d[0])
                     self.spriteslist.append(sprite)
                     self.add(sprite)
 
@@ -1139,6 +1306,19 @@ class Menu():
             self.y = y
             self.vertical_alignment()
 
+            image1= pygame.image.load('data\\image\\other\\icons8-замок-150.png')
+            image1.set_colorkey(pygame.color.Color('black'))
+            image2 = pygame.surface.Surface((image1.get_rect().width, image1.get_rect().height))
+            image2.blit(image1, (0, 0))
+            self.block_sprite = pygame.sprite.Sprite()
+            self.block_sprite.image = image1
+            self.block_sprite.image.set_colorkey(pygame.color.Color('black'))
+            self.block_sprite.rect = self.block_sprite.image.get_rect()
+            self.block_sprite.rect.centerx, self.block_sprite.rect.centery = x, y
+            self.block_sprite.image.set_alpha(0)
+
+            self.add(self.block_sprite)
+
         def vertical_alignment(self):
             if len(self.spriteslist) > 1:
                 y = self.y
@@ -1147,15 +1327,219 @@ class Menu():
                     sprite.rect.centery = y + sprite.rect.height // 2
                     y += sprite.rect.height
 
+        def set_available(self, available):
+            self.available = available
+
         def next(self):
+            self.block_sprite.image.set_alpha(0)
             for sprite in self.spriteslist:
                 sprite.next()
             self.vertical_alignment()
 
+            if self.spriteslist[0].current_image >= self.available:
+                self.block()
+                return False
+            
+            else:
+                return True
+
         def previous(self):
+            self.block_sprite.image.set_alpha(0)
             for sprite in self.spriteslist:
                 sprite.previous()
             self.vertical_alignment()
+
+            if self.spriteslist[0].current_image >= self.available:
+                self.block()
+                return False
+            
+            else:
+                return True
         
         def get_current_objectname(self):
             return self.names[self.spriteslist[0].current_image]
+        
+        def block(self):
+            for sprite in self.spriteslist:
+                sprite.set_alpha(128)
+
+            self.block_sprite.image.set_alpha(256)
+
+
+    class Table():            
+
+        class Tables(pygame.sprite.Sprite):
+
+            def __init__(self, x, y, tables):
+                super().__init__()
+                new_images = list()
+
+                for tb in tables:
+                    table = Menu.Table.Table(0, 0, *tb)
+                    image = pygame.surface.Surface((table.rect.width, table.rect.height), pygame.SRCALPHA)
+                    image.blit(table.image, (0, 0))
+                    new_images.append(image)
+
+                self.images = new_images
+                self.current_image = 0
+                self.image = self.images[self.current_image]
+                self.rect = self.image.get_rect()
+                self.rect.centerx, self.rect.centery = self.x, self.y = x, y
+
+            def next(self):
+                self.current_image = (self.current_image + 1) % len(self.images)
+                self.image = self.images[self.current_image].copy()
+                self.rect = self.image.get_rect()
+                self.rect.centerx, self.rect.centery = self.x, self.y
+                
+            def previous(self):
+                self.current_image = (self.current_image - 1) % len(self.images)
+                self.image = self.images[self.current_image]
+                self.rect = self.image.get_rect()
+                self.rect.centerx, self.rect.centery = self.x, self.y
+
+            def set_alpha(self, n):
+                self.image.set_alpha(n)
+
+
+        class Table(pygame.sprite.Sprite):
+            
+            def __init__(self, x, y, cells, columns_count, border=0, border_color='white', header=None):
+                super().__init__()
+                self.x, self.y = x, y
+                self.border = border
+    
+                self.columns = [Menu.Table.Column(0, 0, cells[i * len(cells) // columns_count:(i + 1) * len(cells) // columns_count], border, border_color) for i in range(columns_count)]
+                    
+                if header is not None: self.header = Menu.Table.Cell(*header, border=border, border_color=border_color)
+                else: self.header = False
+
+                self.update_width()
+                self.update_height()
+                self.make_table()
+
+            def update_width(self):
+                self.width = sum(column.width for column in self.columns)
+
+            def update_height(self):
+                self.heights = list()
+                
+                for i in range(len(self.columns[0].cells)):
+                    self.heights.append(max(column.cells[i].rect.height for column in self.columns))
+
+            def make_table(self):
+                x = 0
+
+                if self.header:
+                    self.header.make_cell(self.width, self.header.rect.height)
+                    self.header.rect.x, self.header.rect.y = x, 0
+                    y = 0 + self.header.rect.height - self.header.border[0]
+
+                else: y = 0
+
+                for column in self.columns:
+                    column.set_cells_size(self.heights, x_0=x, y_0=y)
+                    column.alignment()
+                    x += column.width - column.border
+
+                if self.header: height = sum(self.heights) + self.header.rect.height
+                else: height = sum(self.heights)
+
+                surface = pygame.surface.Surface((self.width, height))
+
+                if self.header: surface.blit(self.header.image, (0, 0))
+
+                for column in self.columns:
+                    for cell in column.cells:
+                        surface.blit(cell.image, (cell.rect.x, cell.rect.y))
+                
+                self.image = surface
+                self.rect = self.image.get_rect()
+                self.rect.centerx, self.rect.y = self.x, self.y
+
+
+        class Column(pygame.sprite.Group):
+            
+            def __init__(self, x_0, y_0, cells, border=0, border_color='white'):
+                self.x_0, self.y_0 = x_0, y_0
+                self.border = border
+
+                self.cells = list()
+                self.cells_heights = list()
+
+                for cell in cells:
+                    cell = Menu.Table.Cell(*cell, border=border, border_color=border_color)
+                    self.cells.append(cell)
+                    self.cells_heights.append(self.cells[-1].rect.height)
+
+                self.width = max([cell.rect.width for cell in self.cells])
+
+            def set_cells_size(self, cells_heights, x_0=None, y_0=None):
+                self.cells_heights = cells_heights
+
+                if x_0 is not None: self.x_0 = x_0
+                if y_0 is not None: self.y_0 = y_0
+
+                self.alignment()
+
+            def alignment(self):
+                y = self.y_0
+
+                for i in range(len(self.cells)):
+                    self.cells[i].make_cell(self.width, self.cells_heights[i])
+                    self.cells[i].rect.x = self.x_0
+                    self.cells[i].rect.y = y
+
+                    y += self.cells[i].rect.height - self.border
+
+
+        class Cell():
+
+            def __init__(self, image, background=None, background_color=None, border=0, border_color='white'):
+                self.original_image = image
+                self.background = (background, background_color)
+                self.border = (border, border_color)
+
+                self.make_cell(*self.get_rect())
+
+            def make_cell(self, width, height):
+                surface = pygame.surface.Surface((width, height), pygame.SRCALPHA)
+                
+                if self.background[0] is None:
+                    if self.background[1] is not None:
+                        surface.fill(pygame.color.Color(self.background[1]))
+                
+                else:
+                    rect = self.background[0].get_rect()
+                    background = self.background[0].copy
+
+                    if rect.width > width and rect.height > height:
+                        x, y = (rect.width - (width - self.border * 2)) // 2, (rect.height - (height - self.border * 2)) // 2
+                    
+                    elif rect.width == width and rect.height == height:
+                        x, y = 0, 0
+
+                    else:
+                        if rect.width < width:
+                            background = pygame.transform.scale(background, (width - self.border * 2, rect.height))
+                            rect = background.get_rect()
+                        
+                        if rect.height < height:
+                            background = pygame.transform.scale(background, (rect.width, height - self.border * 2))
+
+                        x, y = 0, 0
+
+                    surface.blit(background, (x, y))
+
+                if self.border[0] != 0:
+                    pygame.draw.lines(surface, pygame.color.Color(self.border[1]), True, ((self.border[0] // 2, self.border[0] // 2), (width - self.border[0] // 2 - 1, self.border[0] // 2), (width - self.border[0] // 2 - 1, height - self.border[0] // 2 - 1), (self.border[0] // 2, height - self.border[0] // 2 - 1)), self.border[0])
+
+                rect = self.original_image.get_rect()
+                surface.blit(self.original_image, ((width - rect.width) // 2, (height - rect.height) // 2))
+                self.image = surface
+                self.rect = self.image.get_rect()
+
+            def get_rect(self):
+                rect = self.original_image.get_rect()
+                return rect.width + self.border[0] * 2, rect.height + self.border[0] * 2
+    

@@ -1,4 +1,5 @@
-bo|dn|dn|bo
-to|-|-|-|-|-|-|to
-sc|sc|sc|sc|sc
--|fi|fr|fi|fr|fi|fr|-
+fi|-
+-|fi|-|-
+---
+to|-|-|-|to
+-|-|to|-|-

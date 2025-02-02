@@ -1,5 +1,6 @@
 import pygame 
 
+
 def make_frames(sheet, columns, rows, cannon=False):
     if sheet == 'None':
         return None
@@ -36,6 +37,7 @@ def make_frames(sheet, columns, rows, cannon=False):
 
 
         return(new_frames)
+
 
 def get_image(sheet, columns, rows):
     return make_frames(sheet, columns, rows)[0]
