@@ -1,6 +1,6 @@
 player_spaceship1
 shield_1
-auto_cannon
+rockets_cannon
 base_engine
 0
 0

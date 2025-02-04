@@ -119,13 +119,16 @@ def game(screen, lvl):
                     image1 = pygame.surface.Surface((screen.get_rect().width, screen.get_rect().height), pygame.SRCALPHA)
                     image1.blit(screen, (0, 0))
                     image1.set_alpha(128)
-                    image2 = pygame.surface.Surface((800 // 3 * 2, screen.get_rect().height // 2))
+                    image2 = pygame.surface.Surface((800 // 3 * 2, screen.get_rect().height // 2), pygame.SRCALPHA)
                     image2.fill(pygame.color.Color('black'))
-                    pygame.draw.lines(image2, pygame.color.Color('white'), True, ((0, 0), (800 // 3 * 2 - 1, 0), (800 // 3 * 2 - 1, screen.get_rect().height // 2 - 1), (0, screen.get_rect().height // 2 - 1)), 2)
-                    
+                    image2.set_alpha(128)                    
+                    image3 = pygame.surface.Surface((800 // 3 * 2, screen.get_rect().height // 2))
+                    image3.set_colorkey(pygame.color.Color('black'))
+                    pygame.draw.lines(image3, pygame.color.Color('white'), True, ((0, 0), (800 // 3 * 2 - 2, 0), (800 // 3 * 2 - 2, screen.get_rect().height // 2 - 2), (0, screen.get_rect().height // 2 - 2)), 2)
                     background_image = pygame.surface.Surface((screen.get_rect().width, screen.get_rect().height))
                     background_image.blit(image1, (0, 0))
                     background_image.blit(image2, (screen.get_rect().width // 2 - 800 // 3, screen.get_rect().height // 4))
+                    background_image.blit(image3, (screen.get_rect().width // 2 - 800 // 3, screen.get_rect().height // 4))
                     background_sprite = pygame.sprite.Sprite()
                     background_sprite.image = background_image
                     background_sprite.rect = background_image.get_rect()
@@ -133,10 +136,11 @@ def game(screen, lvl):
                     background.add(background_sprite)
 
                     if esc_menu(screen, background, stopwatch.time, score):
+                        main_menu(screen)
                         return
                     
                     with open('settings\\current_player_settings.txt', 'r', encoding='utf-8') as file:
-                        setting = file.readlines()[4]
+                        setting = file.readlines()[4].strip()
 
                     keys = {'up': False, 'down': False, 'left': False, 'right': False, 'shoot': False}
                     stopwatch.stopwatch.tick()
@@ -208,17 +212,48 @@ def game(screen, lvl):
 
         if len(enemy_group.sprites()) == 0:
             if len(placements) == 0:
+                score += 100
                 running = False
+                win = True
 
             else:
                 set_up_enemies(placements.pop(0), *sue_settings)
 
         if player.death_check:
             running = False
+            win = False
 
-    pygame.mouse.set_visible(True)
+    con = sqlite3.connect('levels\\record.sqlite')
+    cur = con.cursor()
+    cur.execute('INSERT INTO record VALUES (?, ?, ?)', (int(lvl), score, stopwatch.time))
+    con.commit()
+    
+    with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as file:
+        data = file.readlines()
+        if int(data[5].strip()) < int(lvl): data[5] = lvl
+        
+    with open('settings\current_player_settings.txt', 'w', encoding='utf-8') as file:
+        file.writelines(data)
+    
+    image1 = pygame.surface.Surface((screen.get_rect().width, screen.get_rect().height), pygame.SRCALPHA)
+    image1.blit(screen, (0, 0))
+    image1.set_alpha(128)
+    image2 = pygame.surface.Surface((screen.get_width(), screen.get_rect().height // 3 * 2), pygame.SRCALPHA)
+    image2.fill(pygame.color.Color('black'))
+    image2.set_alpha(128)                    
+    background_image = pygame.surface.Surface((screen.get_rect().width, screen.get_rect().height))
+    background_image.blit(image1, (0, 0))
+    background_image.blit(image2, (0, screen.get_rect().height // 6))
+    background_sprite = pygame.sprite.Sprite()
+    background_sprite.image = background_image
+    background_sprite.rect = background_image.get_rect()
+    background = pygame.sprite.Group()
+    background.add(background_sprite)
 
-
+    end_menu(screen, background, stopwatch.time, score, win, lvl)
+    main_menu(screen)
+    
+    
 def create_buttons_group(data, text=False, text_color='black', background_color=None, background=None, border=0, border_color='white'):
     group = classes.Menu.Button_Group()
     for d in data:
@@ -256,6 +291,14 @@ def create_main_menu(x, y, width, height, signal):
                f'Максимальный урон за выстрел: {characteristic['zapper_cannon']['damage'] * 20}, Перезарядка: {characteristic['zapper_cannon']['reload']}'), 2)
     names = ('auto_cannon', 'big_space_cannon', 'rockets_cannon', 'zapper_cannon')
     cannon_info_group = classes.Menu.Data(x + width // 2, height // 4, (images, texts1, texts2), height // 30, 'white', names, lvl + 1)
+    
+    with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as file:
+        cannon_name = file.readlines()[2].strip()
+        while True:
+            cannon_info_group.next()
+            if cannon_info_group.get_current_objectname() == cannon_name:
+                break
+            
     spaceship_characteristic_buttons.add(cannon_info_group)
     spaceship_characteristic_buttons.dict['cannon_info'] = cannon_info_group
 
@@ -266,6 +309,15 @@ def create_main_menu(x, y, width, height, signal):
                f'Прочность: {characteristic['shield_3']['shield_hp']}, Перезарядка: {characteristic['shield_3']['shield_reload'] / 60} секунд'), 2)
     names = ('shield_1', 'shield_2', 'shield_3')
     shield_info_group = classes.Menu.Data(x + width // 2, height // 3 * 2, (images, texts1, texts2), height // 30, 'white', names, 3)
+
+    with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as file:
+        shield_name = file.readlines()[1].strip()
+        while True:
+            shield_info_group.next()
+            if shield_info_group.get_current_objectname() == shield_name:
+                break
+            
+            
     spaceship_characteristic_buttons.add(shield_info_group)
     spaceship_characteristic_buttons.dict['shield_info'] = shield_info_group
 
@@ -293,24 +345,27 @@ def create_main_menu(x, y, width, height, signal):
     cur = con.cursor()
     lvls = [cur.execute("""SELECT score, time FROM record
                           WHERE lvl == ?""", (i,)).fetchall() for i in range(1, 5)]
-    lvls = [sorted(lvl, key=lambda x: (int(x[0]), int(x[1] * -1))[:5], reverse=True) for lvl in lvls]
-    font = pygame.font.Font(None, height // 30)
+    lvls = [sorted(lvl, key=lambda x: (int(x[0]), int(x[1] * -1)), reverse=True)[:5] for lvl in lvls]
+    font = pygame.font.Font(None, height // 20)
     for i in range(len(lvls)):
-        new_lvls = [' 1 ', ' 2 ', ' 3 ', ' 4 ', ' 5 ']
+        new_lvls = [' #  ', ' #1 ', ' #2 ', ' #3 ', ' #4 ', ' #5 ', ' Счет']
         if lvls[i] == []:
-            new_lvls.extend(['-                   ' for _ in range(10)])
+            new_lvls.extend(['-                   ' for _ in range(5)])
+            new_lvls.append(' Время')
+            new_lvls.extend(['-                   ' for _ in range(5)])
 
         else:
             n = len(lvls[i])
             new_lvls.extend([str(lvls[i][u][0]) for u in range(n)])
 
             if n < 5:
-                new_lvls.extend(['-                   ' for _ in range(5 - n)])
+                new_lvls.extend([' -                   ' for _ in range(5 - n)])
 
-            new_lvls.extend([f'{lvls[i][u][0] // 1000 // 60}:{lvls[i][u][0] // 1000 % 60}:{str(lvls[i][u][0] % 1000)[:2]}' for u in range(n)])
+            new_lvls.append(' Время')
+            new_lvls.extend([f'{lvls[i][u][1] // 1000 // 60}:{lvls[i][u][1] // 1000 % 60}:{str(lvls[i][u][1] % 1000)[:2]}' for u in range(n)])
 
             if n < 5:
-                new_lvls.extend(['-                   ' for _ in range(5 - n)])
+                new_lvls.extend([' -                   ' for _ in range(5 - n)])
 
         lvls[i] = [[(font.render(text, True, pygame.color.Color('white')),) for text in new_lvls],]
         lvls[i].extend((3, 1))
@@ -320,6 +375,7 @@ def create_main_menu(x, y, width, height, signal):
 
     lvls_data = classes.Menu.Data(x + width // 2, height // 5 * 2, (text, (height // 6, 4), lvls), height // 10, 'white', ('1', '2', '3', '4'), lvl + 1)
     lvl_buttons = classes.Menu.Group_Group()
+    
     lvl_buttons.add(lvl_buttons1)
     lvl_buttons.add(lvl_buttons2)
     lvl_buttons.add(lvls_data)
@@ -418,7 +474,7 @@ def main_menu(screen):
 
             elif event.type == pygame.USEREVENT + 14:
                 game(screen, lvl_buttons.dict['lvl'].get_current_objectname())
-                main_buttons.update((0, 0), False)
+                running = False
             
             elif event.type == pygame.USEREVENT + 15:
                 lvl_buttons.dict['lvl'].previous()
@@ -490,7 +546,7 @@ def esc_menu(screen, background, time, score):
             elif event.type == pygame.USEREVENT + 4:
                 with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as file:
                     data = file.readlines()
-                    data[4] = '0'
+                    data[4] = '0\n'
                     
                 with open('settings\current_player_settings.txt', 'w', encoding='utf-8') as file:
                     file.writelines(data)
@@ -498,7 +554,7 @@ def esc_menu(screen, background, time, score):
             elif event.type == pygame.USEREVENT + 5:
                 with open('settings\current_player_settings.txt', 'r', encoding='utf-8') as file:
                     data = file.readlines()
-                    data[4] = '1'
+                    data[4] = '1\n'
                     
                 with open('settings\current_player_settings.txt', 'w', encoding='utf-8') as file:
                     file.writelines(data)
@@ -513,6 +569,105 @@ def esc_menu(screen, background, time, score):
         main_buttons.draw(screen)
         pygame.display.flip()
 
+
+def create_end_menu(x, y, width, height, signal, time, score, win, lvl):
+    font = pygame.font.Font(None, height // 8)
+    if win: texthd, color = 'Вы победили', 'green'
+    else: texthd, color = 'Поражение', 'red'
+    
+    result = classes.Menu.Text(x + width // 2, y + height // 5, height // 10, (texthd,), color)
+    
+    con = sqlite3.connect('levels\\record.sqlite')
+    cur = con.cursor()
+    lvl = cur.execute("""SELECT score, time FROM record
+                          WHERE lvl == ?""", (int(lvl),)).fetchall()
+    lvl.sort(key=lambda x: (x[0], -x[1]), reverse=True)
+    i = lvl.index((score, time))
+    font = pygame.font.Font(None, height // 15)
+    
+    if i > 2:
+        new_lvl = [' #  ', f' #{i - 1} ', f' #{i} ', f' #{i + 1} ', f' #{i + 2} ', f' #{i + 3} ', ' Счёт']
+    
+    else: 
+        new_lvl = [' #  ', ' #1 ', ' #2 ', ' #3 ', ' #4 ', ' #5 ', ' Счёт']
+    
+    new_lvl = [(font.render(t, True, pygame.color.Color('white')),) for t in new_lvl]
+    
+    if i > 2: n = 2
+    else: n = i
+    
+    new_lvl[n + 1] = (font.render(f' #{i + 1} ', True, pygame.color.Color('black')), None, 'white')
+        
+    if len(lvl) >= 5 and i >= 2:
+        new_lvl.extend([(font.render(str(lvl[u][0]), True, pygame.color.Color('white')),) for u in range(i - 2, i)])
+        new_lvl.append((font.render(str(lvl[i][0]), True, pygame.color.Color('black')), None, 'white'))
+        new_lvl.extend([(font.render(str(lvl[u][0]), True, pygame.color.Color('white')),) for u in range(i + 1, i + 3)])
+        new_lvl.append((font.render(' Время', True, pygame.color.Color('white')),))
+        new_lvl.extend([(font.render(f'{lvl[u][1] // 1000 // 60}:{lvl[u][1] // 1000 % 60}:{str(lvl[u][1] % 1000)[:2]}', True, pygame.color.Color('white')),) for u in range(i - 2, i)])
+        new_lvl.append((font.render(f'{lvl[i][1] // 1000 // 60}:{lvl[i][1] // 1000 % 60}:{str(lvl[i][1] % 1000)[:2]}', True, pygame.color.Color('black')), None, 'white'))
+        new_lvl.extend([(font.render(f'{lvl[u][1] // 1000 // 60}:{lvl[u][1] // 1000 % 60}:{str(lvl[u][1] % 1000)[:2]}', True, pygame.color.Color('white')),) for u in range(i + 1, i + 3)])
+    
+    elif len(lvl) >= 5:
+        new_lvl.extend([(font.render(str(lvl[u][0]), True, pygame.color.Color('white')),) for u in range(0, i)])
+        new_lvl.append((font.render(str(lvl[i][0]), True, pygame.color.Color('black')), None, 'white'))
+        new_lvl.extend([(font.render(str(lvl[u][0]), True, pygame.color.Color('white')),) for u in range(i + 1, 5)])
+        new_lvl.append((font.render(' Время', True, pygame.color.Color('white')),))
+        new_lvl.extend([(font.render(f'{lvl[u][1] // 1000 // 60}:{lvl[u][1] // 1000 % 60}:{str(lvl[u][1] % 1000)[:2]}', True, pygame.color.Color('white')),) for u in range(0, i)])
+        new_lvl.append((font.render(f'{lvl[i][1] // 1000 // 60}:{lvl[i][1] // 1000 % 60}:{str(lvl[i][1] % 1000)[:2]}', True, pygame.color.Color('black')), None, 'white'))
+        new_lvl.extend([(font.render(f'{lvl[u][1] // 1000 // 60}:{lvl[u][1] // 1000 % 60}:{str(lvl[u][1] % 1000)[:2]}', True, pygame.color.Color('white')),) for u in range(i + 1, 5)])
+    
+    else:
+        new_lvl.extend([(font.render(str(lvl[u][0]), True, pygame.color.Color('white')),) for u in range(0, i)])
+        new_lvl.append([font.render(str(lvl[i][0]), True, pygame.color.Color('black')), None, 'white'])
+        new_lvl.extend([(font.render(' -                   ', True, pygame.color.Color('white')),) for _ in range(12 - len(new_lvl))])
+        new_lvl.append((font.render(' Время', True, pygame.color.Color('white')),))
+        new_lvl.extend([(font.render(f'{lvl[u][1] // 1000 // 60}:{lvl[u][1] // 1000 % 60}:{str(lvl[u][1] % 1000)[:2]}', True, pygame.color.Color('white')),) for u in range(0, i)])
+        new_lvl.append([font.render(f'{lvl[i][1] // 1000 // 60}:{lvl[i][1] // 1000 % 60}:{str(lvl[i][1] % 1000)[:2]}', True, pygame.color.Color('black')), None, 'white'])
+        new_lvl.extend([(font.render(' -                   ', True, pygame.color.Color('white')),) for _ in range(18 - len(new_lvl))])
+
+    lvl_tabl = classes.Menu.Table.Table(x + width // 2, y + height // 2.5, new_lvl, 3, border=1)
+    
+    txt = ['Выйти', 'Играть снова']
+    data = [(x + width // 3 * (i * 1 + 1), y + height // 8 * 7, signal + i + 1, txt[i], (width // 4 , height // 9)) for i in range(2)]
+    end_buttons = create_buttons_group(data, text=True, text_color='white', background_color='black', border=4)
+
+    end_buttons.add(result)
+    end_buttons.add(lvl_tabl)
+
+    return end_buttons
+    
+    
+def end_menu(screen, background, time, score, win, lvl):
+    pygame.mouse.set_visible(True)
+
+    width = screen.get_width()
+    height = screen.get_height() // 9 * 7
+    x = 0
+    signal = pygame.USEREVENT
+    end_buttons = create_end_menu(x, height // 9, width, height, signal, time, score, win, lvl)
+
+    running = True
+    
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEMOTION:
+                end_buttons.update(event.pos, False)
+            
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                end_buttons.update(event.pos, True)
+
+            if event.type == pygame.USEREVENT + 1:
+                running = False
+                
+            elif event.type == pygame.USEREVENT + 2:
+                running = False
+                game(screen, str(lvl))
+
+        screen.fill(pygame.color.Color('black'))
+        background.draw(screen)
+        end_buttons.draw(screen)
+        pygame.display.flip()
+        
 
 def main():
     pygame.init()

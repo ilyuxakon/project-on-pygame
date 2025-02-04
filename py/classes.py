@@ -1129,13 +1129,12 @@ class Menu():
             for sprite in self.sprites():
                 if type(sprite) == Menu.Button:
                     sprite.work(coord, click)
-                
-                elif type(sprite) == Menu.Data:
-                    sprite.update()
 
                 elif type(sprite) == Menu.Switch_Button_Group:
                     sprite.update(coord, click)
 
+                else:
+                    sprite.update()
 
     class Switch_Button_Group(Button_Group):
         
@@ -1240,7 +1239,6 @@ class Menu():
             self.image = self.images[self.current_image]
             self.rect = self.image.get_rect()
             self.rect.centerx, self.rect.centery = self.x, self.y
-
 
         def previous(self):
             self.current_image = (self.current_image - 1) % len(self.images)
@@ -1496,7 +1494,12 @@ class Menu():
         class Cell():
 
             def __init__(self, image, background=None, background_color=None, border=0, border_color='white'):
-                self.original_image = image
+                if type(image) == pygame.surface.Surface:
+                    self.original_image = image
+                    
+                else:
+                    self.original_image = image.image
+                    
                 self.background = (background, background_color)
                 self.border = (border, border_color)
 
