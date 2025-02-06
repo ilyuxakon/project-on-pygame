@@ -1,0 +1,4 @@
+pygame==2.6.1
+sqlite3==3.13.0
+math
+random
