@@ -1,0 +1,14 @@
+bc
+fi|fr|fi|fr|fi
+---
+sc|sc
+fr|fi|fr
+sc|fr|sc
+---
+sc|sc|sc
+to
+fr
+---
+to|to|to
+sc|sc|sc|sc|sc
+fi

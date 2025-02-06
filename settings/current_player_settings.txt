@@ -1,6 +1,0 @@
-player_spaceship1
-shield_1
-rockets_cannon
-base_engine
-0
-0

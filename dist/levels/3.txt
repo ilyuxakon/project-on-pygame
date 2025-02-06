@@ -1,0 +1,15 @@
+sc|sc|sc|sc|sc
+sc|sc|sc|sc|sc
+sc|sc|sc|sc|sc
+sc|sc|sc|sc|sc
+---
+bo
+to|to
+fr|fr|fi|fr|fr
+---
+to|to|to
+sc|bc|sc
+---
+bo|bo
+dn
+bc|bc

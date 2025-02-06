@@ -1,0 +1,11 @@
+fi|fi|fi|fi
+---
+fi|-|-|fi
+-|fr|fr|-
+---
+fr|-|fi|fi|-|fr
+-|fr|fr|fr|fr|-
+---
+fr|-|bc|-|fr
+-|fr|-|fr|-
+fi|-|fr|-|fi
